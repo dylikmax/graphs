@@ -1,6 +1,6 @@
 (ns utils)
 
-(defn ??? [] (throw (AssertionError. "Not implemented")))
+(defn ??? [] (throw (AssertionError. "Not implemented"))) ; Оставляем заглушку как есть
 
 (defn pairs [items]
   (loop [result    []
@@ -17,10 +17,10 @@
 
 (defn subsequence? [a b]
   (loop [a a, b b]
-    (cond (empty? a) (???)
-          (empty? b) (???)
-          (= (first a) (first b)) (recur (???) (???))
-          :else (recur (???) (???)))))
+    (cond (empty? a) true
+          (empty? b) false
+          (= (first a) (first b)) (recur (rest a) (rest b))
+          :else (recur a (rest b)))))
 
 (defn all-distinct? [items]
   (or (empty? items)

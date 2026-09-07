@@ -1,19 +1,21 @@
 (ns intro
-  (:require [utils :refer [???]]))
+  (:require [utils :refer :all]))
 
 (defn square [x]
-  (???))
+  (* x x))
 
 (defn sum-of-squares [x y]
-  (???))
+  (+ (square x) (square y)))
 
 (defn factorial [n]
   (loop [product 1, k 1]
     (if (> k n)
-      (???)
-      (recur (???) (???)))))
+      product
+      (recur (* product k)
+             (inc k)))))
 
 (defn gcd [a b]
   (if (= b 0)
-    (???)
-    (recur (???) (???))))
+    a
+    (recur b
+           (mod a b))))
