@@ -1,5 +1,5 @@
 (ns undirected.edge
-  (:require [utils :refer [???]]
+  (:require [utils :refer [all-distinct?]]
             [clojure.set :as set]))
 
 (defn make-edge [vertex-pair]
@@ -14,11 +14,11 @@
   (:ends edge))
 
 (defn incident? [edge vertex]
-  (???))
+  (contains? (ends edge) vertex))
 
 (defn edges-incident? [e1 e2]
-  (???))
+  (boolean (seq (set/intersection (ends e1) (ends e2)))))
 
 (defn other-end [edge vertex]
   {:pre [(incident? edge vertex)]}
-  (???))
+  (first (disj (ends edge) vertex)))

@@ -1,7 +1,5 @@
 (ns utils)
 
-(defn ??? [] (throw (AssertionError. "Not implemented"))) ; Оставляем заглушку как есть
-
 (defn pairs [items]
   (loop [result    []
          remaining items]
