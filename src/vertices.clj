@@ -1,0 +1,11 @@
+(ns vertices)
+
+(def A 'A)
+(def B 'B)
+(def C 'C)
+(def D 'D)
+(def E 'E)
+(def F 'F)
+(def G 'G)
+(def H 'H)
+(def I 'I)
