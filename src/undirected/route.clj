@@ -63,9 +63,6 @@
 (defn simple-cycle? [route]
   (and (cycle? route) (simple? route)))
 
-;; Алгоритм извлечения простой цепи:
-;; Идем по списку вершин. Если встречаем вершину, которая уже есть в текущем пути,
-;; мы отрезаем начало пути до первого вхождения этой вершины.
 (defn- extract-simple-chain-from [vs]
   (loop [path []
          rem vs]
@@ -74,9 +71,7 @@
       (let [v (first rem)
             idx (first (keep-indexed (fn [i x] (when (= x v) i)) path))]
         (if idx
-          ;; Если нашли повтор, обрезаем путь до этого повтора (включая его)
           (recur (subvec path 0 (inc idx)) (rest rem))
-          ;; Иначе добавляем вершину в конец
           (recur (conj path v) (rest rem)))))))
 
 (defn extract-simple-chain [route]
@@ -106,12 +101,9 @@
            curr v1]
       (let [idx (first (keep-indexed (fn [i x] (when (= x curr) i)) path))]
         (if idx
-          ;; Нашли цикл, возвращаем часть от первого вхождения до текущего + замыкание
           (make-route (concat (subvec (vec path) idx) [curr]))
-          ;; Иначе идем дальше, выбирая соседа, который не является предыдущим
           (let [nexts (remove #{prev} (g/adjacent-vertices graph curr))
                 next-v (first nexts)]
-            ;; Защита от зацикливания, если neighbors пустые (хотя pre гарантирует deg >= 2)
             (if (nil? next-v)
               (throw (Exception. "No next vertex"))
               (recur (conj path curr) curr next-v))))))))

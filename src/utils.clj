@@ -15,7 +15,6 @@
 (defn consecutive-pairs [items]
   (partition 2 1 items))
 
-;; Разрывная подпоследовательность (классическая)
 (defn subsequence? [sub seq]
   (cond
     (empty? sub) true
