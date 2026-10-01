@@ -26,7 +26,7 @@
   (last (vertices route)))
 
 (defn contains-vertex? [route vertex]
-  (contains? (set (vertices route)) vertex))
+  (some #{vertex} (vertices route)))
 
 (defn add-vertex [route vertex]
   (make-route (conj (vertices route) vertex)))
@@ -63,15 +63,21 @@
 (defn simple-cycle? [route]
   (and (cycle? route) (simple? route)))
 
-(defn- extract-simple-chain-from [vertices]
-  (loop [chain []
-         remaining vertices]
-    (if (empty? remaining)
-      chain
-      (let [v (first remaining)
-            chain-without-v (take-while #(not= % v) chain)]
-        (recur (conj chain-without-v v)
-               (rest remaining))))))
+;; Алгоритм извлечения простой цепи:
+;; Идем по списку вершин. Если встречаем вершину, которая уже есть в текущем пути,
+;; мы отрезаем начало пути до первого вхождения этой вершины.
+(defn- extract-simple-chain-from [vs]
+  (loop [path []
+         rem vs]
+    (if (empty? rem)
+      path
+      (let [v (first rem)
+            idx (first (keep-indexed (fn [i x] (when (= x v) i)) path))]
+        (if idx
+          ;; Если нашли повтор, обрезаем путь до этого повтора (включая его)
+          (recur (subvec path 0 (inc idx)) (rest rem))
+          ;; Иначе добавляем вершину в конец
+          (recur (conj path v) (rest rem)))))))
 
 (defn extract-simple-chain [route]
   {:pre  [(not (cyclic? route))]
@@ -81,20 +87,31 @@
 (defn extract-simple-cycle [route]
   {:pre  [(cyclic? route)]
    :post [(subroute? % route) (simple-cycle? %)]}
-  (let [vs (vertices route)]
-    (make-route (cons (first vs)
-                      (extract-simple-chain-from (rest vs))))))
+  (let [vs (vec (vertices route))
+        start-v (first vs)
+        inner (subvec vs 1 (dec (count vs)))
+        cleaned-inner (extract-simple-chain-from inner)
+        idx (first (keep-indexed (fn [i x] (when (= x start-v) i)) cleaned-inner))]
+    (if idx
+      (make-route (concat [start-v] (subvec (vec cleaned-inner) 0 (inc idx))))
+      (make-route (concat [start-v] cleaned-inner [start-v])))))
 
 (defn find-simple-cycle [graph]
   {:pre  [(every? (fn [d] (>= d 2)) (g/degrees graph))]
    :post [(graph-contains-route? graph %) (simple-cycle? %)]}
   (let [v0 (first (g/vertices graph))
         v1 (first (g/adjacent-vertices graph v0))]
-    (loop [passed [v0]
-           last v0
-           current v1]
-      (if (some #{current} passed)
-        (make-route (concat (drop-while #(not= % current) passed) [current]))
-        (recur (conj passed current)
-               current
-               (first (remove #{last} (g/adjacent-vertices graph current))))))))
+    (loop [path [v0]
+           prev v0
+           curr v1]
+      (let [idx (first (keep-indexed (fn [i x] (when (= x curr) i)) path))]
+        (if idx
+          ;; Нашли цикл, возвращаем часть от первого вхождения до текущего + замыкание
+          (make-route (concat (subvec (vec path) idx) [curr]))
+          ;; Иначе идем дальше, выбирая соседа, который не является предыдущим
+          (let [nexts (remove #{prev} (g/adjacent-vertices graph curr))
+                next-v (first nexts)]
+            ;; Защита от зацикливания, если neighbors пустые (хотя pre гарантирует deg >= 2)
+            (if (nil? next-v)
+              (throw (Exception. "No next vertex"))
+              (recur (conj path curr) curr next-v))))))))

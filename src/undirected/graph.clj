@@ -36,15 +36,15 @@
 
 (defn incident-edges [graph vertex]
   {:pre [(contains-vertex? graph vertex)]}
-  (filter #(e/incident? % vertex) (edges graph)))
+  (set (filter #(e/incident? % vertex) (edges graph))))
 
 (defn adjacent-vertices [graph vertex]
   {:pre [(contains-vertex? graph vertex)]}
-  (map #(e/other-end % vertex) (incident-edges graph vertex)))
+  (set (map #(e/other-end % vertex) (incident-edges graph vertex))))
 
 (defn adjacent? [graph v1 v2]
   {:pre [(contains-vertex? graph v1) (contains-vertex? graph v2)]}
-  (contains? (set (adjacent-vertices graph v1)) v2))
+  (contains? (adjacent-vertices graph v1) v2))
 
 (defn degree [graph vertex]
   (count (incident-edges graph vertex)))
@@ -90,7 +90,7 @@
               (set/difference (edges g1) (edges g2))))
 
 (defn add-edge [graph edge]
-  (make-graph (vertices graph)
+  (make-graph (set/union (vertices graph) (e/ends edge))
               (conj (edges graph) edge)))
 
 (defn remove-edge [graph edge]
