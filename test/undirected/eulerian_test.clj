@@ -1,82 +1,75 @@
-(ns undirected.eulerian-test
-  (:require [clojure.test :refer :all]
-            [vertices :refer :all]
-            [undirected.graph :refer [graph]]
-            [undirected.route :as r :refer [route]])
-  (:use undirected.eulerian))
+(ns undirected.eulerian
+  (:require
+    [clojure.set :as set]
+    [undirected.connected :refer [connected-components connected?]]
+    [undirected.edge :refer [edge]]
+    [undirected.graph :as g]
+    [undirected.route :as r :refer [make-route route]]))
 
-(deftest eulerian?-test
-  (is (eulerian? (graph [A])))
-  (is (eulerian? (graph [A B C] [A B] [B C] [C A])))
-  (is (not (eulerian? (graph [A B] [A B]))))
-  (is (not (eulerian? (graph [A B C D] [A B] [B C] [C A])))))
+(defn odd-vertices [graph]
+  (map first (filter (fn [[_ d]] (= 1 (mod d 2))) (g/degrees graph))))
 
-(deftest start-cycle-from-test
-  (is (= (route C D A B C)
-         (rotate-cycle-to-start-from (route A B C D A) C)))
-  (is (= (route A B C A)
-         (rotate-cycle-to-start-from (route A B C A) A))))
+(defn eulerian? [graph]
+  (and (or (<= (g/order graph) 1) (connected? graph))
+       (empty? (odd-vertices graph))))
 
-(deftest merge-routes-at-test
-  (is (= (route A B D E B C A)
-         (merge-routes-at (route A B C A) (route B D E B) B))))
+(defn semi-eulerian? [graph]
+  (and (or (<= (g/order graph) 1) (connected? graph))
+       (<= (count (odd-vertices graph)) 2)))
 
-(deftest merge-routes-test
-  (is (= (route A B D E B C A)
-         (merge-routes (route A B C A) (route B D E B)))))
+(defn- split-at-vertex [v vertices]
+  (split-with (fn [u] (not= u v))
+              vertices))
 
-(deftest find-longest-route-1-test
-  (let [g (graph [A B C D] [A B] [B C] [C D])]
-    (is (= (route A B C D) (find-longest-route g A)))
-    (is (= (route D C B A) (find-longest-route g D)))))
+(defn rotate-cycle-to-start-from [route vertex]
+  {:pre  [(r/contains-vertex? route vertex) (r/cycle? route)]
+   :post [(= (r/length route) (r/length %)) (= vertex (r/start %))]}
+  (if (= vertex (r/start route))
+    route
+    (let [[before after] (split-at-vertex vertex (r/vertices route))]
+      (make-route (concat after (rest before) [(first after)])))))
 
-(deftest find-longest-route-2-test
-  ;; 1 - 2
-  ;;  \ / \
-  ;;   3 - 4
-  (let [g (graph [1 2 3 4] [1 2] [1 3] [2 3] [2 4] [3 4])
-        r (find-longest-route g 2)]
-    (is (= 5 (r/length r)))
-    (is (= 3 (r/end r)))))
+(defn merge-routes-at [r1 r2 v]
+  {:pre [(r/contains-vertex? r1 v) (r/contains-vertex? r2 v) (r/cycle? r2)]}
+  (let [[before after] (split-at-vertex v (r/vertices r1))
+        middle (r/vertices (rotate-cycle-to-start-from r2 v))]
+    (make-route (concat before middle (rest after)))))
 
-(deftest find-eulerian-cycle-not-eulerian-test
-  (is (thrown? AssertionError (find-eulerian-cycle (graph [A B] [A B])))))
+(defn merge-routes [r1 r2]
+  (let [v (first (filter (fn [x] (r/contains-vertex? r1 x)) (r/vertices r2)))]
+    (merge-routes-at r1 r2 v)))
 
-(deftest find-eulerian-cycle-zero-steps-test
-  (is (= (route A) (find-eulerian-cycle (graph [A])))))
+(defn find-longest-route [graph start]
+  {:pre [(g/contains-vertex? graph start)]}
+  (loop [r (route start)
+         v start
+         gr graph]
+    (if (g/isolated? gr v)
+      r
+      (let [next-v (first (g/adjacent-vertices gr v))]
+        (recur (r/add-vertex r next-v)
+               next-v
+               (g/remove-edge gr (edge v next-v)))))))
 
-(deftest find-eulerian-cycle-1-test
-  ;; 1 - 2
-  ;;  \ /
-  ;;   3
-  (let [g (graph [1 2 3] [1 2] [2 3] [3 1])
-        c (find-eulerian-cycle g)]
-    (is (r/cycle? c))
-    (is (= g (r/route->graph c)))))
+(declare find-eulerian-cycle)
 
-(deftest find-eulerian-cycle-2-test
-  ;; 1 - 2 - 3
-  ;;  \ / \ /
-  ;;   4   5
-  (let [g (graph [1 2 3 4 5] [1 2] [1 4] [2 3] [2 4] [2 5] [3 5])
-        c (find-eulerian-cycle g)]
-    (is (r/cycle? c))
-    (is (= g (r/route->graph c)))))
+(defn- find-eulerian-path [graph start]
+  {:pre [(g/contains-vertex? graph start)]}
+  (if (= 1 (g/order graph))
+    (make-route [start])
+    (let [route (find-longest-route graph start)
+          remaining-graph (g/difference graph (r/route->graph route))
+          components (connected-components remaining-graph)]
+      (reduce merge-routes route (map find-eulerian-cycle components)))))
 
-(deftest find-eulerian-chain-not-eulerian-test
-  (is (thrown? AssertionError (find-eulerian-chain (graph [A B C D] [A B] [A C] [A D])))))
+(defn find-eulerian-cycle [graph]
+  {:pre [(eulerian? graph)]}
+  (find-eulerian-path graph (first (g/vertices graph))))
 
-(deftest find-eulerian-chain-zero-steps-test
-  (is (= (route A) (find-eulerian-chain (graph [A])))))
-
-(deftest find-eulerian-chain-1-test
-  (is (= (route A B) (find-eulerian-chain (graph [A B] [A B])))))
-
-(deftest find-eulerian-chain-2-test
-  ;; 1 - 2
-  ;;  \ / \
-  ;;   3 - 4
-  (let [g (graph [1 2 3 4] [1 2] [1 3] [2 3] [2 4] [3 4])
-        c (find-eulerian-chain g)]
-    (is (r/chain? c))
-    (is (= g (r/route->graph c)))))
+(defn find-eulerian-chain [graph]
+  {:pre [(semi-eulerian? graph)]}
+  (let [odd-vs (odd-vertices graph)
+        start (if (empty? odd-vs)
+                (first (g/vertices graph))
+                (first odd-vs))]
+    (find-eulerian-path graph start)))
