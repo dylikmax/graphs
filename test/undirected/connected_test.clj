@@ -14,6 +14,10 @@
   (is (= (graph [C])
          (connected-component (graph [A B C] [A B]) C))))
 
+(deftest connected-component-2-test
+  (is (= (graph [A B C D] [A B] [A C] [B C] [B D] [C D])
+         (connected-component (graph [A B C D E F] [A B] [A C] [B C] [B D] [C D] [E F]) A))))
+
 (deftest connected-components-test
   (is (= []
          (connected-components (graph []))))

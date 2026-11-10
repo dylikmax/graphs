@@ -138,6 +138,11 @@
   (is (= (graph [A B] [A B]) (complete-graph [A B])))
   (is (= (graph [A B C] [A B] [A C] [B C]) (complete-graph [A B C]))))
 
+(deftest empty-is-complete-test
+  (is (= (empty-graph []) (complete-graph [])))
+  (is (= (empty-graph [A]) (complete-graph [A])))
+  (is (not (= (empty-graph [A B]) (complete-graph [A B])))))
+
 (deftest one-edge-graph-test
   (is (= (graph [A B] [A B])
          (one-edge-graph (edge A B)))))
