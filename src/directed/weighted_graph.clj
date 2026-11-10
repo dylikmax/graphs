@@ -20,4 +20,4 @@
   ((weights graph) (arc from to)))
 
 (defn route-length [graph route]
-  (???))
+  (apply + (map (weights graph) (arcs route))))
