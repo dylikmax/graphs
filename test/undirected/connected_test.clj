@@ -25,10 +25,11 @@
          (connected-components (graph [A B C] [A B])))))
 
 (deftest connected-vertices?-test
-  (let [g (graph [A B C D] [A B] [C D])]
+  (let [g (graph [A B C D E] [A B] [C D] [D E])]
     (is (connected-vertices? g A B))
     (is (connected-vertices? g B A))
     (is (connected-vertices? g C D))
+    (is (connected-vertices? g C E))
     (is (not (connected-vertices? g A C)))
     (is (not (connected-vertices? g A D)))))
 

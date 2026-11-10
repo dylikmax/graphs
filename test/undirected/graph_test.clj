@@ -143,15 +143,11 @@
          (one-edge-graph (edge A B)))))
 
 (deftest subgraph?-test
-  (let [g1 (graph [A B] [A B])
-        g2 (graph [A B C D] [A B] [C D])
-        g3 (graph [A B C D] [A B] [B C] [C D])]
-    (is (subgraph? g1 g1))
-    (is (subgraph? g1 g2))
-    (is (subgraph? g2 g3))
-
-    (is (not (subgraph? g2 g1)))
-    (is (not (subgraph? g3 g2)))))
+  (is (subgraph? (graph [A]) (graph [A])))
+  (is (subgraph? (graph [A]) (graph [A B])))
+  (is (subgraph? (graph [A B] [A B]) (graph [A B C] [A B] [B C])))
+  (is (not (subgraph? (graph [A B]) (graph [A]))))
+  (is (not (subgraph? (graph [A B] [A B]) (graph [A B C])))))
 
 (deftest union-test
   (is (= (graph [A B C] [A B] [B C])
