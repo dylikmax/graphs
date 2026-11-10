@@ -4,16 +4,18 @@
     [undirected.connected :refer [connected-components connected?]]
     [undirected.edge :refer [edge]]
     [undirected.graph :as g]
-    [undirected.route :as r :refer [make-route route]]))
+    [undirected.route :as r :refer [make-route route]]
+    [utils :refer [???]]))
 
 (defn odd-vertices [graph]
-  (map first (filter (fn [[_ d]] (odd? d)) (g/degrees graph))))
+  (set (filter #(odd? (g/degree graph %)) (g/vertices graph))))
 
 (defn eulerian? [graph]
   (and (connected? graph) (empty? (odd-vertices graph))))
 
 (defn semi-eulerian? [graph]
-  (and (connected? graph) (<= (count (odd-vertices graph)) 2)))
+  (and (connected? graph)
+       (#{0 2} (count (odd-vertices graph)))))
 
 (defn- split-at-vertex [v vertices]
   (split-with (fn [u] (not= u v))
@@ -34,7 +36,7 @@
     (make-route (concat before middle (rest after)))))
 
 (defn merge-routes [r1 r2]
-  (let [v (first (filter (fn [x] (r/contains-vertex? r1 x)) (r/vertices r2)))]
+  (let [v (first (set/intersection (set (r/vertices r1)) (set (r/vertices r2))))]
     (merge-routes-at r1 r2 v)))
 
 (defn find-longest-route [graph start]
@@ -45,7 +47,7 @@
     (if (g/isolated? gr v)
       r
       (let [next-v (first (g/adjacent-vertices gr v))]
-        (recur (r/add-vertex r next-v)
+        (recur (make-route (conj (r/vertices r) next-v))
                next-v
                (g/remove-edge gr (edge v next-v)))))))
 

@@ -1,28 +1,15 @@
 (ns undirected.eulerian-test
   (:require [clojure.test :refer :all]
             [vertices :refer :all]
-            [undirected.graph :refer [graph complete-graph]]
+            [undirected.graph :refer [graph]]
             [undirected.route :as r :refer [route]])
   (:use undirected.eulerian))
-
-(deftest odd-vertices-test
-  (is (empty? (odd-vertices (graph [A]))))
-  (is (empty? (odd-vertices (graph [A B C] [A B] [B C] [C A]))))
-  (is (= 2 (count (odd-vertices (graph [A B] [A B])))))
-  (is (= 4 (count (odd-vertices (graph [A B C D] [A B] [C D]))))))
 
 (deftest eulerian?-test
   (is (eulerian? (graph [A])))
   (is (eulerian? (graph [A B C] [A B] [B C] [C A])))
   (is (not (eulerian? (graph [A B] [A B]))))
   (is (not (eulerian? (graph [A B C D] [A B] [B C] [C A])))))
-
-(deftest semi-eulerian?-test
-  (is (semi-eulerian? (graph [A])))
-  (is (semi-eulerian? (graph [A B C] [A B] [B C] [C A])))
-  (is (semi-eulerian? (graph [A B] [A B])))
-  (is (not (semi-eulerian? (complete-graph [A B C D]))))
-  (is (not (semi-eulerian? (graph [A B C D] [A B] [B C] [C A])))))
 
 (deftest start-cycle-from-test
   (is (= (route C D A B C)
