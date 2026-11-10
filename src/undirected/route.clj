@@ -1,5 +1,5 @@
 (ns undirected.route
-  (:require [utils :refer [consecutive-pairs subsequence? all-distinct?]]
+  (:require [utils :refer [consecutive-pairs subsequence? all-distinct? ???]]
             [undirected.edge :refer [make-edge]]
             [undirected.graph :as g]))
 
@@ -26,16 +26,19 @@
   (last (vertices route)))
 
 (defn contains-vertex? [route vertex]
-  (some #{vertex} (vertices route)))
+  (boolean (some #{vertex} (vertices route))))
 
 (defn add-vertex [route vertex]
   (make-route (conj (vertices route) vertex)))
 
 (defn subroute? [subroute route]
-  (subsequence? (vertices subroute) (vertices route)))
+  (and (= (start subroute) (start route))
+       (= (end subroute) (end route))
+       (subsequence? (vertices subroute) (vertices route))
+       (every? (set (edges route)) (edges subroute))))
 
 (defn route->graph [route]
-  (g/make-graph (set (vertices route)) (set (edges route))))
+  (g/make-graph (distinct (vertices route)) (distinct (edges route))))
 
 (defn graph-contains-route? [graph route]
   (g/subgraph? (route->graph route) graph))
@@ -52,7 +55,10 @@
            (all-distinct? (rest (vertices route))))))
 
 (defn simple-chain? [route]
-  (and (chain? route) (simple? route)))
+  (and (chain? route)
+       (or (all-distinct? (vertices route))
+           (and (= (start route) (end route))
+                (all-distinct? (rest (vertices route)))))))
 
 (defn cyclic? [route]
   (= (start route) (end route)))
@@ -61,18 +67,17 @@
   (and (chain? route) (cyclic? route)))
 
 (defn simple-cycle? [route]
-  (and (cycle? route) (simple? route)))
+  (and (simple-chain? route) (cyclic? route)))
 
-(defn- extract-simple-chain-from [vs]
-  (loop [path []
-         rem vs]
-    (if (empty? rem)
-      path
-      (let [v (first rem)
-            idx (first (keep-indexed (fn [i x] (when (= x v) i)) path))]
-        (if idx
-          (recur (subvec path 0 (inc idx)) (rest rem))
-          (recur (conj path v) (rest rem)))))))
+(defn- extract-simple-chain-from [vertices]
+  (loop [chain []
+         remaining vertices]
+    (if (empty? remaining)
+      chain
+      (let [v (first remaining)
+            chain-without-v (take-while #(not= % v) chain)]
+        (recur (conj (vec chain-without-v) v)
+               (rest remaining))))))
 
 (defn extract-simple-chain [route]
   {:pre  [(not (cyclic? route))]
@@ -82,28 +87,37 @@
 (defn extract-simple-cycle [route]
   {:pre  [(cyclic? route)]
    :post [(subroute? % route) (simple-cycle? %)]}
-  (let [vs (vec (vertices route))
-        start-v (first vs)
-        inner (subvec vs 1 (dec (count vs)))
-        cleaned-inner (extract-simple-chain-from inner)
-        idx (first (keep-indexed (fn [i x] (when (= x start-v) i)) cleaned-inner))]
-    (if idx
-      (make-route (concat [start-v] (subvec (vec cleaned-inner) 0 (inc idx))))
-      (make-route (concat [start-v] cleaned-inner [start-v])))))
+  (let [vs (vertices route)]
+    (make-route (cons (first vs)
+                      (extract-simple-chain-from (rest vs))))))
 
 (defn find-simple-cycle [graph]
   {:pre  [(every? (fn [d] (>= d 2)) (g/degrees graph))]
    :post [(graph-contains-route? graph %) (simple-cycle? %)]}
-  (let [v0 (first (g/vertices graph))
-        v1 (first (g/adjacent-vertices graph v0))]
+  (let [v0 (first (sort (g/vertices graph)))
+        v1 (first (sort (g/adjacent-vertices graph v0)))]
     (loop [path [v0]
+           visited #{v0}
            prev v0
-           curr v1]
-      (let [idx (first (keep-indexed (fn [i x] (when (= x curr) i)) path))]
-        (if idx
-          (make-route (concat (subvec (vec path) idx) [curr]))
-          (let [nexts (remove #{prev} (g/adjacent-vertices graph curr))
-                next-v (first nexts)]
-            (if (nil? next-v)
-              (throw (Exception. "No next vertex"))
-              (recur (conj path curr) curr next-v))))))))
+           current v1]
+      (if (contains? visited current)
+        (let [idx (.indexOf (vec path) current)]
+          (make-route (concat (subvec (vec path) idx) [current])))
+        (let [neighbors (remove #{prev} (g/adjacent-vertices graph current))
+              unvisited (sort (remove visited neighbors))]
+          (cond
+            (some #{v0} neighbors)
+            (recur (conj path current)
+                   (conj visited current)
+                   current
+                   v0)
+            (seq unvisited)
+            (recur (conj path current)
+                   (conj visited current)
+                   current
+                   (first unvisited))
+            :else
+            (recur (conj path current)
+                   (conj visited current)
+                   current
+                   (first (sort neighbors)))))))))

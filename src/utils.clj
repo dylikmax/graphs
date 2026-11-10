@@ -15,12 +15,12 @@
 (defn consecutive-pairs [items]
   (partition 2 1 items))
 
-(defn subsequence? [sub seq]
-  (cond
-    (empty? sub) true
-    (empty? seq) false
-    (= (first sub) (first seq)) (recur (rest sub) (rest seq))
-    :else (recur sub (rest seq))))
+(defn subsequence? [a b]
+  (loop [a a, b b]
+    (cond (empty? a) true
+          (empty? b) false
+          (= (first a) (first b)) (recur (rest a) (rest b))
+          :else (recur a (rest b)))))
 
 (defn all-distinct? [items]
   (or (empty? items)

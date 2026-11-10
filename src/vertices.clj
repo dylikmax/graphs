@@ -9,3 +9,6 @@
 (def G 'G)
 (def H 'H)
 (def I 'I)
+
+(def S 'S)
+(def T 'T)

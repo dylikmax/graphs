@@ -1,7 +1,6 @@
 (ns undirected.weighted-graph
   (:require [undirected.edge :refer [edge]]
-            [undirected.graph :refer [edges make-graph]]
-            [utils :refer [???]]))
+            [undirected.graph :refer [edges make-graph]]))
 
 (defn make-weighted-graph [graph edge-weights]
   (assoc graph :weights (into {} (map (fn [e] [e (edge-weights e)])
@@ -17,4 +16,4 @@
   (:weights weighted-graph))
 
 (defn total-weight [weighted-graph]
-  (???))
+  (apply + (vals (weights weighted-graph))))

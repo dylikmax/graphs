@@ -1,5 +1,5 @@
 (ns intro
-  (:require [utils :refer :all]))
+  (:require [utils :refer [???]]))
 
 (defn square [x]
   (* x x))
@@ -11,11 +11,9 @@
   (loop [product 1, k 1]
     (if (> k n)
       product
-      (recur (* product k)
-             (inc k)))))
+      (recur (* product k) (inc k)))))
 
 (defn gcd [a b]
   (if (= b 0)
     a
-    (recur b
-           (mod a b))))
+    (recur b (mod a b))))
