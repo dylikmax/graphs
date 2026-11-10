@@ -126,5 +126,5 @@
     (is (= 3 (route-length example-negative-graph path)))))
 
 (deftest shortest-path-modified-dijkstra-exit-test
-  (let [g (weighted-graph [S A T] [S T 1] [S A 3] [A T -3])]
+  (let [g (weighted-graph [S A B T] [S T 1] [S A 3] [S B 5] [A T -3])]
     (is (= (route S A T) (shortest-path-modified-dijkstra g S T)))))
